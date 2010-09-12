@@ -44,66 +44,7 @@ except ImportError:
 
 
 __name__ = "glgm"
-__doc__ = """
-            This module implements the following Generative Linear Gaussian Models (GLGM)
-            (based on references below, primarily on ref.1):
-                x(t+1) = Ax(t) + w(t) = Ax(t) + w0,     w0 = N(0, Q)
-                y(t)   = Cx(t) + v(t) = Cx(t) + v0,     v0 = N(0, R)
-            where:
-                x is a (k,1) vector of latent factors or state or causes (hidden) variables
-                y is a (p,1) vector of observations
-                A is a (k,k) matrix of states transition
-                C is a (p,k) matrix of observation measurement or generative matrix
-                w is a (k,1) vector of state evolution White Gaussian Noise (WGN)
-                v is a (k,1) vector of observation evolution WGN
-                w and v are indep. of each other and x and y
-                N is a shortcut for Gaussian or Normal pdf
-            Then the matrix of data samples x or y has shape (variables nr,samples nr.).
-
-            In particular the module aims to implement the following:
-            - fa (Factor Analysis)
-            - ppca (Probabilistic Principal Component Analysis)
-            - pca (Principal Component Analysis)
-            - mog (Mixture of Gaussians)
-            - vq (Vector Quantization)
-            - k-means clustering
-            - mofa (Mixture of Factor Analyzers)
-            - ica (Independent Component Analysis)
-            
-            References:
-            1  Unifying Review of Linear Gaussian Models
-               Roweis, Ghahramani
-               Neural Computation 1999 11:2, 305-345.
-            2  The EM algorithm for mixtures of factor analyzers
-               Ghahramani, Hinton
-               1997, Technical Report CRG-TR-96-1
-               Dept. of Computer Science, University of Toronto, Toronto, Canada, MSS 1A4
-            3  Max Welling's tutorials 
-               (available @ http://www.ics.uci.edu/~welling/classnotes/classnotes.html)
-            4  Book of Johnson and Wichern
-            5  Book of Joreskog
-            6  Book of Duda, Hart
-            7  Book of MacKay
-            8  Book of Golub, Van Loan
-            9  Maximum Likelihood and Covariant Algorithms for Independent Component Analysis
-               MacKay
-            10 Solving inverse problems using an EM approach to density estimation
-               Ghahramani
-            11 Maximum likelihood and minimum classification error Factor Analysis for automatic speech recognition
-               Saul, Rahim
-            12 Finite mixture models
-               Geoffrey J. McLachlan, David Peel [book of] 
-	        13 Numerical recipes: the art of scientific computing
-               Press et al [book of]
-            14 Unsupervised Classification with Non-Gaussian Mixture Models Using ICA
-               Lee, Lewicki, Sejnowski
-            15 EM Algorithms for PCA and SPCA
-               Roweis
-            16 A tutorial on Hidden Markov Models and selected applications in speech recognition
-               Rabiner
-            17 Maximum Likelihood Estimation for Multivariate Mixture Observations of Markov Chains
-               Juang, Levinson, Sondhi
-         """
+__doc__ = """Notation and references are reported in README file"""
 
 
 
