@@ -658,7 +658,7 @@ class mixture(lm):
         return CompProb 
 
     def entropy(self): pass
-    
+
 
 
 class mog(mixture):
