@@ -388,7 +388,7 @@ class ppca(spca): pass
 class pca(fa):
     """
     See ref. 1 and 15
-    TODO: To review the EM method and in particular how to get an orthonormal basis,
+    TODO: Check EM method and in particular how to get an orthonormal basis,
           in order to obtain results comparable to those from the svd approach
     """
     
