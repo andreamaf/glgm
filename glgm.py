@@ -49,17 +49,10 @@ __doc__ = """Notation and references are reported in README file"""
 class lm(object):
     """See details explained above"""
 
-    __slots__ = ['y', 'n', 'p']
     y, n, p = _default_values_ = None, 0, None
     cumulate = True
     
     def __new__(cls, y, *args, **kwargs):
-        """
-        NB It seems to be a bug that python.exe (x86 binaries on wind)
-           gives a Deprecation Warning when compiling this code,
-           saying that __new__() can't accept arguments
-           TODO: every sort of BROADCASTING!!!
-        """
 
         obj = object.__new__(cls, y, *args, **kwargs)
         if hasattr(y, '__iter__'):
@@ -69,21 +62,7 @@ class lm(object):
             lm.p, lm.n = lm.y.shape
         obj.y, obj.n, obj.p, obj.cumulate = lm.y, lm.n, lm.p, lm.cumulate
         return obj
-
-    def mu_y(cls, y = None):
-        
-        if y is None: y = cls.y
-        return numpy.mean(y, axis = 1).reshape(cls.p, 1)
     
-    def cov_obs(cls, y = None, cov_bias = 1):
-        
-        if y is None: y = cls.y
-        return numpy.cov(y, bias = cov_bias)
-    
-    def centered_input(cls): return cls.y - cls.mu_y()
-
-    def erase(cls): cls.y, cls.n, cls.p = lm._default_values_
-
     def __call__(self, **kw): return self.InferandLearn(**kw)
 
     def InferandLearn(self, max_iter_nr = 30, **kwargs):
@@ -142,6 +121,25 @@ class lm(object):
 
         pass  
     
+    @classmethod
+    def mu_y(cls, y = None):
+        
+        if y is None: y = cls.y
+        return numpy.mean(y, axis = 1).reshape(cls.p, 1)
+    
+    @classmethod
+    def cov_obs(cls, y = None, cov_bias = 1):
+        
+        if y is None: y = cls.y
+        return numpy.cov(y, bias = cov_bias)
+    
+    @classmethod
+    def centered_input(cls): return cls.y - cls.mu_y()
+
+    @classmethod
+    def erase(cls): cls.y, cls.n, cls.p = lm._default_values_
+
+    
 
 
 class fa(lm):
@@ -175,7 +173,7 @@ class fa(lm):
     def __init__(self, y, k):
         
         try: k = int(k)
-        except: raise Exception, "Specify a valid positive integer for the nr latent factors"
+        except ValueError: raise Exception, "Specify a valid positive integer for the nr latent factors"
         if k <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
         if k > self.p: raise Exception, "Specify a number of latent factors lower or equal than observables variables number"
         self.k = k
@@ -395,7 +393,7 @@ class pca(fa):
         if k is None: self.k = self.p
         else:
             try: k = int(k)
-            except: raise Exception, "Specify a valid positive integer for the nr latent factors"
+            except ValueError: raise Exception, "Specify a valid positive integer for the nr latent factors"
             if k <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
             if k > self.p:
                 print 'The number of latent factors should be <= observables variables number.'
@@ -761,19 +759,19 @@ class mofa(mixture):
         """
 
         try: m = int(m)
-        except: raise Exception, "Specify an integer for the nr of mixture components"
+        except ValueError: raise Exception, "Specify an integer for the nr of mixture components"
         if m <= 0: raise Exception, "Specify a positive integer for the nr of mixture components"
         self.m = m
         
         if hasattr(k, '__iter__'):
             try: map(int, k) 
-            except: raise Exception, "Specify integers for the iterable of latent factors nr"
+            except ValueError: raise Exception, "Specify integers for the iterable of latent factors nr"
             if len(k) < m: raise Exception, "Specify as many latent factors as components nr"
             for ki in k:
                 if ki <= 0: raise Exception, "Specify positive integers as latent factors nr"
         else:
             try: k = int(k)
-            except: raise Exception, "Specify an integer for the nr of latent factors"
+            except ValueError: raise Exception, "Specify an integer for the nr of latent factors"
             if k <= 0: raise Exception, "Specify a positive integer for the nr of latent factors"
             k = [k] * m
         self.k = tuple(k)
