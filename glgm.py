@@ -88,7 +88,7 @@ class lm(object):
 
     def __call__(self, **kw): return self.InferandLearn(**kw)
 
-    def InferandLearn(self, max_iter_nr = 30, **kw):
+    def InferandLearn(self, max_iter_nr = 30, **kwargs):
         """
         Inference and Learning method to be delegated by subclasses.
         Here EM algorithm's iterations will start.
@@ -96,8 +96,8 @@ class lm(object):
 
         E_EM, M_EM  = self.Inference, self.Learning
         logLH, Break = self.logLikelihood, self.break_condition
-        self.logLH_delta = kw.get('logLH_delta', None)
-        for kw, val in kw.iteritems(): setattr(self, 'kw', val)
+        self.logLH_delta = kwargs.get('logLH_delta', None)
+        for kw, val in kwargs.iteritems(): self.kw = val
         
         for iter_nr in xrange(max_iter_nr):
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,7 +116,7 @@ class lm(object):
             # Break condition of the for loop
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             if Break(): break
-        
+        self.iter_nr = iter_nr
         self.trained = True
 
     def next(self, **kwargs):
@@ -180,7 +180,7 @@ class fa(lm):
         except: raise Exception, "Specify a valid positive integer for the nr latent factors"
         if k <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
         if k > self.p: raise Exception, "Specify a number of latent factors lower or equal than observables variables number"
-        setattr(self, 'k', k)
+        self.k = k
 
         self.initialize()
 
@@ -394,7 +394,7 @@ class pca(fa):
     
     def __init__(self, y, k = None):
         
-        if k is None: setattr(self, 'k', self.p)
+        if k is None: self.k = self.p
         else:
             try: k = int(k)
             except: raise Exception, "Specify a valid positive integer for the nr latent factors"
@@ -402,8 +402,8 @@ class pca(fa):
             if k > self.p:
                 print 'The number of latent factors should be <= observables variables number.'
                 print 'Now it has been automatically set equal to the observables variables number'
-                setattr(self, 'k', self.p)
-            else: setattr(self, 'k', k)
+                self.k = self.p
+            else: self.k = k
 
         self.initialize()
     
@@ -438,10 +438,10 @@ class pca(fa):
         self.V = _zeros((self.k, self.k))
         
         if svd_on:
-            setattr(self, 'svd_on', True)
+            self.svd_on = True
             self.svd()
         else:
-            setattr(self, 'svd_on', False) 
+            self.svd_on = False 
             lm.InferandLearn(self, max_iter_nr = max_iter_nr, **kwargs)
             
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -669,9 +669,9 @@ class mog(mixture):
         try: m = int(m)
         except: raise Exception, "Specify an integer for the nr latent factors"
         if m <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
-        setattr(self, 'm', m)
+        self.m = m
         
-        setattr(self, 'typePrior_mu', typePrior_mu)
+        self.typePrior_mu = typePrior_mu
         self.initialize()
     
     def initialize_sigma(self): 
@@ -765,7 +765,7 @@ class mofa(mixture):
         try: m = int(m)
         except: raise Exception, "Specify an integer for the nr of mixture components"
         if m <= 0: raise Exception, "Specify a positive integer for the nr of mixture components"
-        setattr(self, 'm', m)
+        self.m = m
         
         if hasattr(k, '__iter__'):
             try: map(int, k) 
@@ -778,10 +778,10 @@ class mofa(mixture):
             except: raise Exception, "Specify an integer for the nr of latent factors"
             if k <= 0: raise Exception, "Specify a positive integer for the nr of latent factors"
             k = [k] * m
-        setattr(self, 'k', tuple(k))
+        self.k = tuple(k)
         
-        setattr(self, 'commonUniq', commonUniq)
-        setattr(self, 'typePrior_mu', typePrior_mu)
+        self.commonUniq = commonUniq
+        self.typePrior_mu = typePrior_mu
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Instantiating the Mixture of Factor Analyzers
