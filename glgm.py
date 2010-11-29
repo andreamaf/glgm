@@ -6,39 +6,37 @@ except ImportError:
 
 try:
     import numpy
-    _array  = numpy.array
-    _inv    = numpy.linalg.inv
-    _dot    = numpy.dot
-    _inner  = numpy.inner
-    _outer  = numpy.outer
-    _vdot   = numpy.vdot
-    _tensordot = numpy.tensordot
-    _det    = numpy.linalg.det
-    _cov    = numpy.cov
-    _diag   = numpy.diag
-    _ones   = numpy.ones
-    _eye    = numpy.eye
-    _norma  = numpy.linalg.norm
-    _arange = numpy.arange
-    _zeros  = numpy.zeros
-    _solve  = numpy.linalg.solve
-    _Cholesky = numpy.linalg.cholesky
-    _argmax = numpy.argmax
-    _nanargmax = numpy.nanargmax
-    _mean   = numpy.mean
-    _average = numpy.average
-    _std    = numpy.std
-    _mul    = numpy.multiply
-    _sum    = numpy.sum
-    _prod   = numpy.product
-    _sqrt   = numpy.sqrt
-    _log    = numpy.log
-    _abs    = numpy.abs
-    _exp    = numpy.exp
-    _pow    = numpy.power
-    _hstack = numpy.hstack
-    _vstack = numpy.vstack
-    _append = numpy.append
+    from numpy import (array as _array,
+                       arange as _arange,
+                       dot as _dot,
+                       inner as _inner,
+                       outer as _outer,
+                       vdot as _vdot,
+                       cov as _cov,
+                       diag as _diag,
+                       ones as _ones,
+                       eye as _eye,
+                       zeros as _zeros,
+                       argmax as _argmax,
+                       nanargmax as _nanargmax, 
+                       mean as _mean,
+                       std as _std,
+                       multiply as _mul,
+                       sum as _sum,
+                       product as _prod,
+                       sqrt as _sqrt,
+                       log as _log,
+                       abs as _abs,
+                       exp as _exp,
+                       power as _pow,
+                       hstack as _hstack,
+                       vstack as _vstack,
+                       append as _append)
+    from numpy.linalg import (norm as _norm,
+                              inv as _inv,
+                              det as _det,
+                              solve as _solve,
+                              cholesky as _Cholesky)
 except ImportError:
     raise ImportError, "Impossible to import numpy/scipy module"
 
