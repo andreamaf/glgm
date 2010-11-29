@@ -236,7 +236,8 @@ class fa(lm):
     def break_condition(self):
         
         if -self.logLH_delta < self.delta_logLH < self.logLH_delta:
-            self.logLH__break = True; return True
+            self.logLH__break = True
+            return True
         return False
     
     def betaInferenceLemma(self):
@@ -331,7 +332,8 @@ class fa(lm):
     def infer(self):
         
         if self.trained: return self.get_latent(), self.infer_observed()
-        print 'Not even trained!'; return
+        print 'Not even trained!'
+        return
 
     def get_expected_latent(self):
         
@@ -593,7 +595,9 @@ class mixture(lm):
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             # If no data in the i-th cluster, fixing pi[i] to zero 
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            except numpy.linalg.linalg.LinAlgError: pi = 0.; pass
+            except numpy.linalg.linalg.LinAlgError:
+                pi = 0.
+                pass
 
         self.Resppower()
         self.normalizeResp()
@@ -637,7 +641,9 @@ class mixture(lm):
     def GetExpectedLatent(self): return self.MAP()
     
     # No (WN) noise added
-    def InferObs(self): mp = self.MAP(); return [self.y[:, mp == i] for i in xrange(self.m)]
+    def InferObs(self):
+        mp = self.MAP()
+        return [self.y[:, mp == i] for i in xrange(self.m)]
 
     # No (WN) noise added
     def GetNewObs(self, centered = False): pass    
@@ -902,7 +908,8 @@ class icaMacKay(lm):
         
         self.Q = self.R = None
         self.A = numpy.random.uniform(-1, 1, size = (self.p, self.p)) #numpy.random.rand(self.p, self.p) #
-        self.A_start = numpy.empty((self.p, self.p)); self.A_start[:] = self.A
+        self.A_start = numpy.empty((self.p, self.p))
+        self.A_start[:] = self.A
     
     def nonlinear_map(self, z): return -numpy.tanh(z)
 
@@ -913,8 +920,10 @@ class icaMacKay(lm):
                       bias_eta = 100.):
         
         _nonlinear_map = self.nonlinear_map
-        if eta == 'adaptive': eta = 1. / bias_eta; _switch = 1
-        else: eta = .002; _switch = 0
+        if eta == 'adaptive':
+            eta = 1. / bias_eta
+            _switch = 1
+        else: eta, _switch = .002, 0
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Iterations start
