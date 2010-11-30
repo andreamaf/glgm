@@ -1,49 +1,17 @@
 try:
     import psyco
     psyco.full()
-except ImportError:
-    pass
-
-try:
-    import numpy
-    from numpy import (array as _array,
-                       arange as _arange,
-                       dot as _dot,
-                       inner as _inner,
-                       outer as _outer,
-                       vdot as _vdot,
-                       cov as _cov,
-                       diag as _diag,
-                       ones as _ones,
-                       eye as _eye,
-                       zeros as _zeros,
-                       argmax as _argmax,
-                       nanargmax as _nanargmax, 
-                       mean as _mean,
-                       std as _std,
-                       multiply as _mul,
-                       sum as _sum,
-                       product as _prod,
-                       sqrt as _sqrt,
-                       log as _log,
-                       abs as _abs,
-                       exp as _exp,
-                       power as _pow,
-                       hstack as _hstack,
-                       vstack as _vstack,
-                       append as _append)
-    from numpy.linalg import (norm as _norm,
-                              inv as _inv,
-                              det as _det,
-                              solve as _solve,
-                              cholesky as _Cholesky)
-except ImportError:
-    raise ImportError, "Impossible to import numpy/scipy module"
+except ImportError: pass
 
 
-__name__ = "glgm"
-__doc__ = """Notation and references are reported in README file"""
-
+from numpy import (array, arange, dot, inner, outer, vdot, cov,
+                   diag, ones, eye, zeros, argmax, nanargmax, 
+                   mean, std, multiply, sum, product, sqrt,
+                   log, abs, exp, power, hstack, vstack, append,
+                   concatenate, pi, inf, amin, amax, empty,
+                   tanh, any, isnan)
+from numpy.linalg import (norm, inv, det, svd, solve, cholesky, linalg)
+from numpy.random import (normal, randn, rand, multivariate_normal, uniform)
 
 
 class lm(object):
@@ -57,8 +25,9 @@ class lm(object):
         obj = object.__new__(cls, y, *args, **kwargs)
         if hasattr(y, '__iter__'):
             lm.cumulate = kwargs.get('cumulate', True)
-            if lm.y is None or not(lm.cumulate): lm.y = numpy.array(y, dtype = 'float32')
-            else: lm.y = numpy.concatenate((lm.y, y), axis = 1) #append(lm.y, y, axis = 1) #hstack((lm.y, y))
+            if lm.y is None or not(lm.cumulate):
+                lm.y = array(y, dtype = 'float32')
+            else: lm.y = concatenate((lm.y, y), axis = 1) #append(lm.y, y, axis = 1) #hstack((lm.y, y))
             lm.p, lm.n = lm.y.shape
         obj.y, obj.n, obj.p, obj.cumulate = lm.y, lm.n, lm.p, lm.cumulate
         return obj
@@ -125,13 +94,13 @@ class lm(object):
     def mu_y(cls, y = None):
         
         if y is None: y = cls.y
-        return numpy.mean(y, axis = 1).reshape(cls.p, 1)
+        return mean(y, axis = 1).reshape(cls.p, 1)
     
     @classmethod
     def cov_obs(cls, y = None, cov_bias = 1):
         
         if y is None: y = cls.y
-        return numpy.cov(y, bias = cov_bias)
+        return cov(y, bias = cov_bias)
     
     @classmethod
     def centered_input(cls): return cls.y - cls.mu_y()
@@ -185,45 +154,45 @@ class fa(lm):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Covariance matrix Q of hidden factors = I matrix
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.Q = _eye(self.k)
+        self.Q = eye(self.k)
     
     def initialize_C(self):
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Following MDP init settings
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        scale = _prod(self.yyT_diag) ** (1./self.p)
-        self.C = numpy.random.normal(0, numpy.sqrt(scale / self.k), size = (self.p, self.k))
+        scale = product(self.yyTdiag) ** (1./self.p)
+        self.C = normal(0, sqrt(scale / self.k), size = (self.p, self.k))
     
     def initialize_R(self, with_WN = False):
         """There are other (here commented) ways to init R"""
         
-        self.R = self.yyT_diag
-        if with_WN: self.R += numpy.random.randn(self.p)
+        self.R = self.yyTdiag
+        if with_WN: self.R += randn(self.p)
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # From pag.531 of ref.4 
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ## self.R = (1-.5*self.p/self.k)*self.yyT_diag
+        ## self.R = (1-.5*self.p/self.k)*self.yyTdiag
 
-    def initialize_logLH(self):
+    def initializelogLH(self):
         
-        self.logLH = -numpy.inf
-        self.delta_logLH = numpy.inf
-        self.logLH_const = -.5 * self.p * _log(2. * numpy.pi)
+        self.logLH = -inf
+        self.deltalogLH = inf
+        self.logLH_const = -.5 * self.p * log(2. * pi)
         self.logLH_tracks = []
         self.logLH__break = False
 
     def initialize(self):
         """Initialization step: C and other vars, get observed data covariance"""
 
-        self.arangek, self.arangep = _arange(self.k), _arange(self.p)
+        self.arangek, self.arangep = arange(self.k), arange(self.p)
         
         self.yyT = self.cov_obs()
-        self.yyT_diag = self.yyT[self.arangep, self.arangep]
+        self.yyTdiag = self.yyT[self.arangep, self.arangep]
         self.initialize_C()
         self.initialize_R()
         self.initialize_Q()
-        self.initialize_logLH()
+        self.initializelogLH()
 
     def InferandLearn(self, max_iter_nr = 20, logLH_delta = 1e-3,
                       inferwithLemma = True, **kwargs):
@@ -235,14 +204,14 @@ class fa(lm):
         
     def break_condition(self):
         
-        if -self.logLH_delta < self.delta_logLH < self.logLH_delta:
+        if -self.logLH_delta < self.deltalogLH < self.logLH_delta:
             self.logLH__break = True
             return True
         return False
     
     def betaInferenceLemma(self):
 
-        C, CT, R_inv = self.C, self.C.T, self.R ** -1
+        C, CT, Rinv = self.C, self.C.T, self.R ** -1
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Applying the matrix inversion lemma
@@ -250,17 +219,17 @@ class fa(lm):
         #      - aka Sherman-Morrison-Woodbury formula at pag.50 
         #        in ref.8 (formula (2.1.4)
         #      - aka binomial inverse theorem at 
-        #        http://en.wikipedia.org/wiki/Binomial_inverse_theorem
+        #        http://en.wikipedia.org/wiki/Binomialinverse_theorem
         #      - or derived from matrix blockwise inversion as in 
-        #        http://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion
+        #        http://en.wikipedia.org/wiki/Invertible_matrix#Blockwiseinversion
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        beta_temp = _mul(CT, R_inv)
-        beta = _dot(beta_temp, C)
+        beta_temp = multiply(CT, Rinv)
+        beta = dot(beta_temp, C)
         beta[self.arangek, self.arangek] += 1.
-        beta = -_dot(C, _dot(_inv(beta), beta_temp))
+        beta = -dot(C, dot(inv(beta), beta_temp))
         beta[self.arangep, self.arangep] += 1.
-        self.logLH_temp = _mul(R_inv.reshape(self.p, 1), beta) ## R_inv * beta #_mul(R_inv, beta)
-        self.beta = _dot(beta_temp, beta)
+        self.logLH_temp = multiply(Rinv.reshape(self.p, 1), beta) ## Rinv * beta #multiply(Rinv, beta)
+        self.beta = dot(beta_temp, beta)
 
     def betaInference(self):
 
@@ -270,10 +239,10 @@ class fa(lm):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Applying the classical method to invert beta
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        beta = _dot(C, CT)
+        beta = dot(C, CT)
         beta[self.arangep, self.arangep] += R
-        self.logLH_temp = beta # = _inv(beta)
-        self.beta = _dot(CT, _inv(beta)) #beta)
+        self.logLH_temp = beta # = inv(beta)
+        self.beta = dot(CT, inv(beta)) #beta)
 
     def Inference(self):
         """
@@ -281,14 +250,14 @@ class fa(lm):
         Inference of sufficient statistic E(x|y) (here x_y)
         NB I tried to compute beta via the matrix inversion lemma
            but performances doesn't seem to be better than applying the ordinary formula.
-        NB beta.ravel()[_arange(0, k**2, k) + _arange(k)] += 1.   #<--- code at left is inefficient!
-           beta.ravel()[_arange(0, p**2, p) + _arange(p)] += 1.   #<--- code at left is inefficient!
-           self.V.ravel()[_arange(0, k**2, k) + _arange(k)] += 1. #<--- code at left is inefficient!
+        NB beta.ravel()[arange(0, k**2, k) + arange(k)] += 1.   #<--- code at left is inefficient!
+           beta.ravel()[arange(0, p**2, p) + arange(p)] += 1.   #<--- code at left is inefficient!
+           self.V.ravel()[arange(0, k**2, k) + arange(k)] += 1. #<--- code at left is inefficient!
         TODO Test if betaInferenceLemma is advantageous at high p values.
         """
         
         self.betaInferenceMethod()
-        self.V = - _dot(self.beta, self.C)
+        self.V = - dot(self.beta, self.C)
         self.V[self.arangek, self.arangek] += 1.
 
     def Learning_R(self):
@@ -298,7 +267,7 @@ class fa(lm):
         sub-classes able to override the present method
         """
         
-        self.R = self.yyT_diag - _sum(_mul(self.C, self.delta), axis=1) / self.n
+        self.R = self.yyTdiag - sum(multiply(self.C, self.delta), axis=1) / self.n
 
     def Learning(self):
         """
@@ -307,11 +276,11 @@ class fa(lm):
         Learning and updating model's parameters C and R
         """
         
-        delta = _dot(self.yyT, self.beta.T)
-        self.gamma = self.n * (_dot(self.beta, delta) + self.V)
+        delta = dot(self.yyT, self.beta.T)
+        self.gamma = self.n * (dot(self.beta, delta) + self.V)
         delta *= self.n
         self.delta = delta
-        self.C = _dot(self.delta, _inv(self.gamma))
+        self.C = dot(self.delta, inv(self.gamma))
         self.Learning_R()
 
     def logLikelihood(self, mu = None):
@@ -323,10 +292,10 @@ class fa(lm):
         """
         
         logLH_old = self.logLH
-        _yyT =  self.yyT - _dot(mu, mu.T) if mu != None else self.yyT 
-        self.logLH = self.logLH_const - .5 * (-_log(_det(self.logLH_temp)) + \
-                     _vdot(_yyT, self.logLH_temp))
-        self.delta_logLH = self.logLH - logLH_old
+        _yyT =  self.yyT - dot(mu, mu.T) if mu != None else self.yyT 
+        self.logLH = self.logLH_const - .5 * (-log(det(self.logLH_temp)) + \
+                     vdot(_yyT, self.logLH_temp))
+        self.deltalogLH = self.logLH - logLH_old
         self.logLH_tracks.append(self.logLH)
 
     def infer(self):
@@ -338,13 +307,13 @@ class fa(lm):
     def get_expected_latent(self):
         
         if not(self.trained): self.InferandLearn()
-        return numpy.dot(self.beta, self.y)
+        return dot(self.beta, self.y)
 
     def infer_observed(self, noised = False):
         
         if not(self.trained): self.InferandLearn()
-        inf_y = numpy.dot(self.C, self.get_expected_latent()) + self.mu_y()
-        if noised: return inf_y + numpy.random.multivariate_normal(numpy.zeros(self.p), numpy.diag(self.R), self.n).T
+        inf_y = dot(self.C, self.get_expected_latent()) + self.mu_y()
+        if noised: return inf_y + multivariate_normal(zeros(self.p), diag(self.R), self.n).T
         return inf_y
     
     def get_new_observed(self, input, noised = False, centered = False):
@@ -354,12 +323,11 @@ class fa(lm):
         """
 
         if not(self.trained): self.InferandLearn()
-        if isinstance(input, int): input = numpy.random.normal(size = (self.k, input))
-        new_obs = _dot(self.C, input) + self.mu_y()
+        if isinstance(input, int): input = normal(size = (self.k, input))
+        new_obs = dot(self.C, input) + self.mu_y()
         if centered: new_obs -= self.mu_y(new_obs)
         if noised:
-            new_obs += numpy.random.multivariate_normal(_zeros(self.p),
-                                                        _diag(self.R), input.shape[1]).T
+            new_obs += multivariate_normal(zeros(self.p), diag(self.R), input.shape[1]).T
         return new_obs
 
 
@@ -370,14 +338,14 @@ class spca(fa):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Covariance matrix R of observations = const*I matrix
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.R = _ones(self.p) * _mean(self.yyT_diag)
+        self.R = ones(self.p) * mean(self.yyTdiag)
 
     def Learning_R(self):
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Covariance matrix R of observations = const*I matrix
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.R = _ones(self.p) * _mean(self.yyT_diag - _sum(_mul(self.C, self.delta), axis=1) / self.n)
+        self.R = ones(self.p) * mean(self.yyTdiag - sum(multiply(self.C, self.delta), axis=1) / self.n)
 
 
 class ppca(spca): pass
@@ -410,16 +378,16 @@ class pca(fa):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Following MDP init settings
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        scale = 1. #_prod(self.yyT_diag) ** (1./self.p)
-        self.C = numpy.random.normal(0, numpy.sqrt(scale / self.k), size = (self.p, self.k))
-        self.C = numpy.array([e / _norma(e) for e in self.C.T]).T
+        scale = 1. #product(self.yyTdiag) ** (1./self.p)
+        self.C = normal(0, sqrt(scale / self.k), size = (self.p, self.k))
+        self.C = array([e / norma(e) for e in self.C.T]).T
     
     def initialize_R(self):
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Covariance matrix R of observations = Zeros matrix
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.R = _zeros(self.p)
+        self.R = zeros(self.p)
 
     def Inference(self): self.betaInference()
     
@@ -429,11 +397,11 @@ class pca(fa):
         # Read note 10, pag.318, ref.1 about the fomula of beta
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         CT = self.C.T
-        self.beta = _dot(_inv(_dot(CT, self.C)), CT)
+        self.beta = dot(inv(dot(CT, self.C)), CT)
 
     def InferandLearn(self, max_iter_nr = 100, svd_on = True, **kwargs):
         
-        self.V = _zeros((self.k, self.k))
+        self.V = zeros((self.k, self.k))
         
         if svd_on:
             self.svd_on = True
@@ -458,8 +426,8 @@ class pca(fa):
             import scipy.linalg as scilinalg
             self.C = scilinalg.orth(self.C)
             #print 'orth(C)=', C_orth
-            #u, varsvd, v = numpy.linalg.svd(_cov(_dot(C_orth.T, self.centered_input())), full_matrices = False)
-            #self.C = _dot(self.C, v)
+            #u, varsvd, v = svd(cov(dot(C_orth.T, self.centered_input())), full_matrices = False)
+            #self.C = dot(self.C, v)
         except: print "An error occurred: none orthonormal basis found!"
 
     def Learning(self):
@@ -467,9 +435,9 @@ class pca(fa):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # M step of EM algorithm
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.delta = _dot(self.yyT, self.beta.T)
-        self.gamma = _dot(self.beta, self.delta)
-        self.C = _dot(self.delta, _inv(self.gamma))
+        self.delta = dot(self.yyT, self.beta.T)
+        self.gamma = dot(self.beta, self.delta)
+        self.C = dot(self.delta, inv(self.gamma))
     
     def logLikelihood(self): pass
     
@@ -484,13 +452,13 @@ class pca(fa):
     def svd(self):
         
         print 'Performing SVD...'
-        U, self.VarSvd, V = numpy.linalg.svd(self.yyT, full_matrices = False)
+        U, self.VarSvd, V = svd(self.yyT, full_matrices = False)
         self.C = U[:, :self.k]
         self.trained = True
     
-    def get_expected_latent(self): return _dot(self.beta, self.y)
+    def get_expected_latent(self): return dot(self.beta, self.y)
     
-    def get_latent(self): return _dot(self.C.T, self.centered_input())
+    def get_latent(self): return dot(self.C.T, self.centered_input())
 
 
 class whitening(pca):
@@ -498,7 +466,7 @@ class whitening(pca):
     def InferandLearn(self, **kwargs):
         
         pca.InferandLearn(self, svd_on = True, **kwargs)
-        self.C /= _sqrt(self.VarSvd[:self.k]).reshape(1, self.k)
+        self.C /= sqrt(self.VarSvd[:self.k]).reshape(1, self.k)
 
 
 
@@ -515,19 +483,19 @@ class mixture(lm):
         - sigma with a random square matrix for each cluster
         """
     
-        self.arangep = _arange(self.p)
+        self.arangep = arange(self.p)
         self.yyT = self.cov_obs()
-        self.yyT_diag = self.yyT[self.arangep, self.arangep]
+        self.yyTdiag = self.yyT[self.arangep, self.arangep]
         
         self.initialize_pi()
         self.initialize_mu()
         self.initialize_Resp()
         self.initialize_sigma()
-        self.initialize_logLH()
+        self.initializelogLH()
 
     def initialize_Resp(self):
 
-        self.Resp = numpy.random.rand(self.m, self.n)
+        self.Resp = rand(self.m, self.n)
         self.normalizeResp()
 
     def Resppower(self): pass
@@ -536,7 +504,7 @@ class mixture(lm):
     
     def initialize_pi(self):
 
-        self.pi = numpy.random.rand(self.m)
+        self.pi = rand(self.m)
         self.pi /= self.pi.sum()
     
     def pi_clusters(self): self.pi = self.Resp.sum(axis = 1) / self.n
@@ -544,15 +512,15 @@ class mixture(lm):
     def Normalprior_mu(self, scale = 1):
         """Normal prior on cluster's centroids"""
 
-        self.mu = numpy.random.multivariate_normal(self.mu_y().ravel(), \
-                                self.cov_obs() / scale, self.m).reshape(self.m, self.p)
+        self.mu = multivariate_normal(self.mu_y().ravel(), \
+                                     self.cov_obs() / scale, self.m).reshape(self.m, self.p)
 
     def Uniformprior_mu(self):
         """Uniform prior on cluster's centroids"""
         
-        _uniform = lambda i, j: numpy.random.uniform(i, j, self.m) 
-        self.mu = numpy.array(map(_uniform, numpy.amin(self.y, axis=1), \
-                                numpy.amax(self.y, axis=1))).reshape(self.m, self.p)
+        _uniform = lambda i, j: uniform(i, j, self.m) 
+        self.mu = array(map(_uniform, amin(self.y, axis=1), \
+                            amax(self.y, axis=1))).reshape(self.m, self.p)
 
     def initialize_mu(self):
         """Following a Strategy DP"""
@@ -560,21 +528,21 @@ class mixture(lm):
         if self.typePrior_mu == 'normal' or not(self.typePrior_mu): self.Normalprior_mu()
         elif self.typePrior_mu == 'uniform': self.Uniformprior_mu()
         
-    def initialize_logLH(self):
+    def initializelogLH(self):
         
-        self.logLH = -numpy.inf
-        self.delta_logLH = numpy.inf
+        self.logLH = -inf
+        self.deltalogLH = inf
         self.logLH_tracks = []
         self.logLH__break = False
-        self.logLH_const = -.5 * self.p * _log(2. * numpy.pi)
+        self.logLH_const = -.5 * self.p * log(2. * pi)
 
         # An help from already available Resp values
-        self.LH_temp = numpy.empty((self.m, self.n))    
+        self.LH_temp = empty((self.m, self.n))    
     
     def CrossProdFactory(self, inv_sigma):
         """Curried method in order to speed up the processing"""
 
-        def CrossProdinner(z): return _dot(_dot(z, inv_sigma), z.T)
+        def CrossProdinner(z): return dot(dot(z, inv_sigma), z.T)
         return CrossProdinner
     
     def Inference(self):
@@ -584,18 +552,18 @@ class mixture(lm):
             yCent_i = self.y - mu.reshape(self.p, 1)
             try:
                 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                # There's no need to multiply const_i by (2*numpy.pi)**self.p
+                # There's no need to multiply const_i by (2*pi)**self.p
                 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                const_i = _abs(_det(sigma)) ** -.5
+                const_i = abs(det(sigma)) ** -.5
                 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                # Currying CrossProdFactory with _inv(self.sigma[i])
+                # Currying CrossProdFactory with inv(self.sigma[i])
                 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                _CrossProd = self.CrossProdFactory(_inv(sigma)) 
-                Resp_i[:] = LH[:] = pi * const_i * _exp(-.5 * _array(map(_CrossProd, yCent_i.T)))
+                _CrossProd = self.CrossProdFactory(inv(sigma)) 
+                Resp_i[:] = LH[:] = pi * const_i * exp(-.5 * array(map(_CrossProd, yCent_i.T)))
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             # If no data in the i-th cluster, fixing pi[i] to zero 
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            except numpy.linalg.linalg.LinAlgError:
+            except linalg.LinAlgError:
                 pi = 0.
                 pass
 
@@ -625,18 +593,18 @@ class mixture(lm):
         LH = 0.
         LHComp = []
         for pi, mu, sigma in zip(self.pi, self.mu, self.sigma):
-            const_i = const * _abs(_det(sigma)) ** -.5
-            _inv_sigma = _inv(sigma)
+            const_i = const * abs(det(sigma)) ** -.5
+            inv_sigma = inv(sigma)
             _mu = mu.reshape(self.p, 1)
-            LHComp.append(pi * _vdot(self.yyT - _dot(_mu, _mu.T), .5 * _inv_sigma))
+            LHComp.append(pi * vdot(self.yyT - dot(_mu, _mu.T), .5 * inv_sigma))
         self.logLH = sum(LHComp)
         """
-        self.logLH = self.logLH_const + sum(map(_log, self.LH_temp.sum(axis = 0))) / self.n
+        self.logLH = self.logLH_const + sum(map(log, self.LH_temp.sum(axis = 0))) / self.n
 
-        self.delta_logLH = self.logLH - logLH_old
+        self.deltalogLH = self.logLH - logLH_old
         self.logLH_tracks.append(self.logLH)
 
-    def MAP(self): return _argmax(self.Resp, axis = 0)
+    def MAP(self): return argmax(self.Resp, axis = 0)
 
     def GetExpectedLatent(self): return self.MAP()
     
@@ -653,10 +621,10 @@ class mixture(lm):
         CompProb = []
         for pi, mu, sigma in zip(self.pi, self.mu, self.sigma):
             try:
-                const_i = ((2*numpy.pi) ** self.p) * (_abs(_det(sigma)) ** -.5)
-                _CrossProd = self.CrossProdFactory(_inv(sigma))
+                const_i = ((2*pi) ** self.p) * (abs(det(sigma)) ** -.5)
+                _CrossProd = self.CrossProdFactory(inv(sigma))
                 CompProb.append(pi * const_i * _CrossProd(obs - mu.reshape(self.p, 1)))
-            except numpy.linalg.linalg.LinAlgError: CompProb.append(0.)
+            except linalg.LinAlgError: CompProb.append(0.)
         return CompProb 
 
     def entropy(self): pass
@@ -678,18 +646,18 @@ class mog(mixture):
     
     def initialize_sigma(self): 
 
-        self.sigma = numpy.empty(shape = (self.m, self.p, self.p))
+        self.sigma = empty(shape = (self.m, self.p, self.p))
         self.sigma_clusters()
 
     def mu_clusters(self):
 
-        self.mu = _dot(self.Resp, self.y.T) / self.Resp.sum(axis = 1).reshape(self.m, 1)
+        self.mu = dot(self.Resp, self.y.T) / self.Resp.sum(axis = 1).reshape(self.m, 1)
  
     def sigma_clusters(self):
         
         for Resp_i, mu, sigma in zip(self.Resp, self.mu, self.sigma):
             y_mu = self.y - mu.reshape(self.p, 1)
-            sigma[:] = _dot(Resp_i * y_mu, y_mu.T) / Resp_i.sum()
+            sigma[:] = dot(Resp_i * y_mu, y_mu.T) / Resp_i.sum()
 
 
 
@@ -706,7 +674,7 @@ class vq(mog):
         self.alfa = alfa
         lm.InferandLearn(self, max_iter_nr = max_iter_nr)
     
-    def Resppower(self): self.Resp = _power(self.Resp, self.alfa)
+    def Resppower(self): self.Resp = powerer(self.Resp, self.alfa)
  
 
 class hardvq(vq):
@@ -716,14 +684,14 @@ class hardvq(vq):
     
     def Resppower(self):
 
-        indices_max = _nanargmax(self.Resp, axis=0)
-        self.Resp = _zeros((self.m, self.n))
-        self.Resp[indices_max, _arange(self.n)] = 1.
+        indices_max = nanargmax(self.Resp, axis=0)
+        self.Resp = zeros((self.m, self.n))
+        self.Resp[indices_max, arange(self.n)] = 1.
 
 class hard2vq(hardvq):
     """WTA and clusters equally probable"""
 
-    def initialize_pi(self): self.pi = _ones(self.m, dtype = 'float') / self.m
+    def initialize_pi(self): self.pi = ones(self.m, dtype = 'float') / self.m
     
     def pi_clusters(self): pass
     
@@ -733,8 +701,8 @@ class kmeans(hard2vq):
     
     def initialize_sigma(self):
         
-        self.sigma = numpy.zeros(shape = (self.m, self.p, self.p))
-        self.sigma[:, self.arangep, self.arangep] = _ones(self.p)
+        self.sigma = zeros(shape = (self.m, self.p, self.p))
+        self.sigma[:, self.arangep, self.arangep] = ones(self.p)
 
     def sigma_clusters(self): pass
 
@@ -795,22 +763,22 @@ class mofa(mixture):
 
     def initialize_sigma(self):
 
-        self.sigma = _zeros(shape = (self.m, self.p, self.p))
-        for sg, fa in zip(self.sigma, self.fas): sg[:] = _dot(fa.C, fa.C.T) + _diag(fa.R)
+        self.sigma = zeros(shape = (self.m, self.p, self.p))
+        for sg, fa in zip(self.sigma, self.fas): sg[:] = dot(fa.C, fa.C.T) + diag(fa.R)
     
-    def initialize_logLH(self):
+    def initializelogLH(self):
         
-        self.logLH = -numpy.inf
-        self.delta_logLH = numpy.inf
+        self.logLH = -inf
+        self.deltalogLH = inf
         self.logLH_tracks = []
         self.logLH__break = False
         for fa in self.fas:
-            fa.initialize_logLH()
+            fa.initializelogLH()
             fa.betaInferenceLemma() #betaInference() 
-        self.logLH_const = -.5 * self.p * _log(2. * numpy.pi)
+        self.logLH_const = -.5 * self.p * log(2. * pi)
 
         # An help from already available Resp values
-        self.LH_temp = numpy.empty((self.m, self.n))    
+        self.LH_temp = empty((self.m, self.n))    
     
     def mu_clusters(self):
         """
@@ -836,34 +804,34 @@ class mofa(mixture):
             ######################################
             # E step (the following two rows) 
             ######################################
-            Exy = _dot(beta, y - _mu)
-            ExyBlock = numpy.vstack((Exy, _ones((1, n))))
+            Exy = dot(beta, y - _mu)
+            ExyBlock = vstack((Exy, ones((1, n))))
             
             RespExy = Resp * Exy
             sumRespExy = RespExy.sum(axis=1).reshape(k, 1)
                 
-            RespyExy = _dot(Resp * y, Exy.T)
-            RespyExyBlock = _dot(Resp * y, ExyBlock.T)
+            RespyExy = dot(Resp * y, Exy.T)
+            RespyExyBlock = dot(Resp * y, ExyBlock.T)
 
-            RespExxy = _dot(RespExy, Exy.T) - sumResp * _dot(beta, C)
-            RespExxy[_arange(k), _arange(k)] += sumResp
-            RespExxyBlock = numpy.vstack((numpy.hstack((RespExxy, sumRespExy)), 
-                                          numpy.append(sumRespExy.T, sumResp)))
+            RespExxy = dot(RespExy, Exy.T) - sumResp * dot(beta, C)
+            RespExxy[arange(k), arange(k)] += sumResp
+            RespExxyBlock = vstack((hstack((RespExxy, sumRespExy)), 
+                                           append(sumRespExy.T, sumResp)))
 
             ######################################
             # M step
             ######################################
             try:
-                Cmu = _dot(RespyExyBlock, _inv(RespExxyBlock))
+                Cmu = dot(RespyExyBlock, inv(RespExxyBlock))
                 cls.C[:] = Cmu[:, :-1]
                 mu[:] = Cmu[:, -1]
-                cls.R[:] = _diag(_dot(Resp * y, y.T) - _dot(Cmu, _dot(Resp * ExyBlock, y.T)))
-            except numpy.linalg.linalg.LinAlgError:
+                cls.R[:] = diag(dot(Resp * y, y.T) - dot(Cmu, dot(Resp * ExyBlock, y.T)))
+            except linalg.LinAlgError:
                 print 'Mixture Component %d-th disappeared' % i
                 self.pi[i] = 0.
         
         self.postprocess_R()
-        for sg, fa in zip(self.sigma, self.fas): sg[:] = _dot(fa.C, fa.C.T) + _diag(fa.R)
+        for sg, fa in zip(self.sigma, self.fas): sg[:] = dot(fa.C, fa.C.T) + diag(fa.R)
 
     def postprocess_R(self):
         """
@@ -877,10 +845,10 @@ class mofa(mixture):
         if not(self.commonUniq):
             for Resp, fa in zip(self.Resp, self.fas): fa.R[:] /= Resp.sum()
         else:
-            R_mean = _zeros(self.p) 
-            for fa in self.fas: R_mean += fa.R
-            R_mean /= self.n
-            for fa in self.fas: fa.R[:] = R_mean
+            Rmean = zeros(self.p) 
+            for fa in self.fas: Rmean += fa.R
+            Rmean /= self.n
+            for fa in self.fas: fa.R[:] = Rmean
     
     def logLikelihood_Old(self):
         """TODO: Review this!"""
@@ -889,9 +857,9 @@ class mofa(mixture):
         LH = 0.
         for fa, pi, mu in zip(self.fas, self.pi, self.mu):
             fa.logLikelihood(mu = mu.reshape(self.p, 1))
-            LH += _exp(fa.logLH) * pi
-        self.logLH = _log(LH)
-        self.delta_logLH = self.logLH - logLH_old
+            LH += exp(fa.logLH) * pi
+        self.logLH = log(LH)
+        self.deltalogLH = self.logLH - logLH_old
         self.logLH_tracks.append(self.logLH)
     
 
@@ -907,15 +875,15 @@ class icaMacKay(lm):
     def initialize(self):
         
         self.Q = self.R = None
-        self.A = numpy.random.uniform(-1, 1, size = (self.p, self.p)) #numpy.random.rand(self.p, self.p) #
-        self.A_start = numpy.empty((self.p, self.p))
+        self.A = random.uniform(-1, 1, size = (self.p, self.p)) #rand(self.p, self.p) #
+        self.A_start = empty((self.p, self.p))
         self.A_start[:] = self.A
     
-    def nonlinear_map(self, z): return -numpy.tanh(z)
+    def nonlinear_map(self, z): return -tanh(z)
 
     def InferandLearn(self,
-                      max_inner_iter_nr = numpy.inf,
-                      max_outer_iter_nr = 10,
+                      maxinner_iter_nr = inf,
+                      maxouter_iter_nr = 10,
                       eta = 'adaptive',
                       bias_eta = 100.):
         
@@ -929,13 +897,13 @@ class icaMacKay(lm):
         # Iterations start
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         while True:
-            for iter_nr in xrange(max_outer_iter_nr):
+            for iter_nr in xrange(maxouter_iter_nr):
                 for i, x in enumerate(self.y.T):
-                    if i == max_inner_iter_nr: break
+                    if i == maxinner_iter_nr: break
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     # Put x through a linear mapping
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                    a = _dot(self.A, x)
+                    a = dot(self.A, x)
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     # Put a through a nonlinear map
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -943,7 +911,7 @@ class icaMacKay(lm):
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     # Put a back through A
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                    xi = _dot(self.A.T, a)
+                    xi = dot(self.A.T, a)
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     # Adjust the weights in accordance with 
                     # If eta scales adaptively as 1/n, we have to add a term
@@ -951,11 +919,11 @@ class icaMacKay(lm):
                     # iterations of the algorithm.
                     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     eta = (1 -_switch) * eta + _switch / (i + bias_eta)
-                    self.A += eta * (self.A + _outer(z, xi))
-                if numpy.any(numpy.isnan(self.A.ravel())):
+                    self.A += eta * (self.A + outer(z, xi))
+                if any(isnan(self.A.ravel())):
                     if verbose: print 'Got NaN at iter %d-th! Re-init unmix matrix A...' % (iter_nr + 1)
                     self.initialize()           
-            if numpy.any(numpy.isnan(self.A.ravel())):
+            if any(isnan(self.A.ravel())):
                 if verbose:
                     print 'Got NaN after %d iterations! Re-start and re-init unmix matrix A...' % max_iter_nr
                 self.initialize()
