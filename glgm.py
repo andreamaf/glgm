@@ -4,6 +4,79 @@ try:
 except ImportError: pass
 
 
+__doc__ = """
+The present module Generative Linear Gaussian Models (GLGM) implements in Python programming language
+the following models based mainly on references nr.1 (see References below):
+
+        x(t+1) = Ax(t) + w(t) = Ax(t) + w0,     w0 = N(0, Q)
+        y(t)   = Cx(t) + v(t) = Cx(t) + v0,     v0 = N(0, R)
+
+where:
+
+        x is a (k,1) vector of latent factors or state or causes (hidden) variables
+        y is a (p,1) vector of observations
+        A is a (k,k) matrix of states transition
+        C is a (p,k) matrix of observation measurement or generative matrix
+        w is a (k,1) vector of state evolution White Gaussian Noise (WGN)
+        v is a (k,1) vector of observation evolution WGN
+        w and v are statistically independent of each other and of x and y
+        N stands for for Gaussian or Normal probability density function (pdf)
+
+NB Matrix x and y have both shape given by the tuple ('variables nr','samples nr').
+
+
+In particular the module aims to implement the following:
+
+    - fa    (Factor Analysis)
+    - ppca  (Probabilistic Principal Component Analysis)
+    - pca   (Principal Component Analysis)
+    - mog   (Mixture of Gaussians)
+    - vq    (Vector Quantization)
+    - k-means clustering
+    - mofa  (Mixture of Factor Analyzers)
+    - ica   (Independent Component Analysis)
+    
+
+To use any a method actually implemented, there is no need of any installation procedure, only to import the module glgm (in the glgm.py file) and then call the correspondent method.
+
+
+References:
+
+    1  Unifying Review of Linear Gaussian Models
+        Roweis, Ghahramani
+        Neural Computation 1999 11:2, 305-345.
+    2  The EM algorithm for mixtures of factor analyzers
+        Ghahramani, Hinton
+        1997, Technical Report CRG-TR-96-1
+        Dept. of Computer Science, University of Toronto, Toronto, Canada, MSS 1A4
+    3  Max Welling's tutorials 
+        (available @ http://www.ics.uci.edu/~welling/classnotes/classnotes.html)
+    4  Book of Johnson and Wichern
+    5  Book of Joreskog
+    6  Book of Duda, Hart
+    7  Book of MacKay
+    8  Book of Golub, Van Loan
+    9  Maximum Likelihood and Covariant Algorithms for Independent Component Analysis
+        MacKay
+    10 Solving inverse problems using an EM approach to density estimation
+        Ghahramani
+    11 Maximum likelihood and minimum classification error Factor Analysis for automatic speech recognition
+        Saul, Rahim
+    12 Finite mixture models
+        Geoffrey J. McLachlan, David Peel [book of] 
+    13 Numerical recipes: the art of scientific computing
+        Press et al [book of]
+    14 Unsupervised Classification with Non-Gaussian Mixture Models Using ICA
+        Lee, Lewicki, Sejnowski
+    15 EM Algorithms for PCA and SPCA
+        Roweis
+    16 A tutorial on Hidden Markov Models and selected applications in speech recognition
+        Rabiner
+    17 Maximum Likelihood Estimation for Multivariate Mixture Observations of Markov Chains
+        Juang, Levinson, Sondhi   
+"""
+
+
 from numpy import (array, arange, dot, inner, outer, vdot, cov,
                    diag, ones, eye, zeros, argmax, nanargmax, 
                    mean, std, multiply, sum, product, sqrt,
@@ -424,7 +497,7 @@ class pca(fa):
             #print 'orth(C)=', C_orth
             #u, varsvd, v = svd(cov(dot(C_orth.T, self.centered_input())), full_matrices = False)
             #self.C = dot(self.C, v)
-        except: print "An error occurred: none orthonormal basis found!"
+        except scilinalg.LinAlgError: print "An error occurred: none orthonormal basis found!"
 
     def Learning(self):
         
@@ -633,9 +706,10 @@ class mog(mixture):
     def __init__(self, y, m, typePrior_mu = ''):
 
         super(mog, self).__init__(y)
-        try: m = int(m)
-        except: raise Exception, "Specify an integer for the nr latent factors"
-        if m <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
+        if not isinstance(m, int):
+            raise TypeError('m (the number of mixture components) must be an integer')
+        if m <= 0:
+            raise ValueError('m (the number of mixture components) must be positive')
         self.m = m
         
         self.typePrior_mu = typePrior_mu
@@ -730,9 +804,10 @@ class mofa(mixture):
         """
 
         super(mofa, self).__init__(y)
-        try: m = int(m)
-        except ValueError: raise Exception, "Specify an integer for the nr of mixture components"
-        if m <= 0: raise Exception, "Specify a positive integer for the nr of mixture components"
+        if not isinstance(m, int):
+            raise TypeError('m (the number of mixture components) must be an integer')
+        if m <= 0:
+            raise ValueError('m (the number of mixture components) must be positive')
         self.m = m
         
         if hasattr(k, '__iter__'):
