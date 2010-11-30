@@ -39,8 +39,11 @@ class lm(object):
         Inference and Learning method to be delegated by subclasses.
         Here EM algorithm's iterations will start.
         """
-
-        E_EM, M_EM  = self.Inference, self.Learning
+        
+        if not isinstance(max_iter_nr, int):
+            raise TypeError('The maximum number of iterations of the EM procedure must be an integer')
+        if max_iter_nr <= 0:
+            raise ValueError('The maximum number of iterations of the EM procedure must be positive')
         logLH, Break = self.logLikelihood, self.break_condition
         self.logLH_delta = kwargs.get('logLH_delta', None)
         for kw, val in kwargs.iteritems(): self.kw = val
@@ -110,7 +113,6 @@ class lm(object):
 
     
 
-
 class fa(lm):
     """
     GLGM static data modeling in fa, ppca and pca
@@ -141,10 +143,12 @@ class fa(lm):
     
     def __init__(self, y, k):
         
-        try: k = int(k)
-        except ValueError: raise Exception, "Specify a valid positive integer for the nr latent factors"
-        if k <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
-        if k > self.p: raise Exception, "Specify a number of latent factors lower or equal than observables variables number"
+        if not isinstance(k, int):
+            raise TypeError('k (the number of latent factors) must be an integer')
+        if k <= 0:
+            raise ValueError('k (the number of latent factors) must be positive')
+        if k > self.p:
+            raise ValueError('k (the number of latent factors) must not be greater than p (the number of observables)')
         self.k = k
 
         self.initialize()
@@ -300,7 +304,7 @@ class fa(lm):
 
     def infer(self):
         
-        if self.trained: return self.get_latent(), self.infer_observed()
+        if self.trained: return self.get_expected_latent(), self.infer_observed()
         print 'Not even trained!'
         return
 
@@ -885,7 +889,8 @@ class icaMacKay(lm):
                       maxinner_iter_nr = inf,
                       maxouter_iter_nr = 10,
                       eta = 'adaptive',
-                      bias_eta = 100.):
+                      bias_eta = 100.,
+                      verbose = False):
         
         _nonlinear_map = self.nonlinear_map
         if eta == 'adaptive':
@@ -925,7 +930,7 @@ class icaMacKay(lm):
                     self.initialize()           
             if any(isnan(self.A.ravel())):
                 if verbose:
-                    print 'Got NaN after %d iterations! Re-start and re-init unmix matrix A...' % max_iter_nr
+                    print 'Got NaN after %d iterations! Re-start and re-init unmix matrix A...' % self.max_iter_nr
                 self.initialize()
                 continue
 
