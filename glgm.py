@@ -20,18 +20,13 @@ class lm(object):
     y, n, p = _default_values_ = None, 0, None
     cumulate = True
     
-    def __new__(cls, y, *args, **kwargs):
+    def __init__(self, y, *args, **kwargs):
 
-        obj = object.__new__(cls, y, *args, **kwargs)
-        if hasattr(y, '__iter__'):
-            lm.cumulate = kwargs.get('cumulate', True)
-            if lm.y is None or not(lm.cumulate):
-                lm.y = array(y, dtype = 'float32')
-            else: lm.y = concatenate((lm.y, y), axis = 1) #append(lm.y, y, axis = 1) #hstack((lm.y, y))
-            lm.p, lm.n = lm.y.shape
-        obj.y, obj.n, obj.p, obj.cumulate = lm.y, lm.n, lm.p, lm.cumulate
-        return obj
-    
+        if not(hasattr(y, '__iter__')):
+            raise AttributeError('Input has to an iterable')
+        self.y = y
+        self.p, self.n = y.shape
+             
     def __call__(self, **kw): return self.InferandLearn(**kw)
 
     def InferandLearn(self, max_iter_nr = 30, **kwargs):
@@ -44,6 +39,7 @@ class lm(object):
             raise TypeError('The maximum number of iterations of the EM procedure must be an integer')
         if max_iter_nr <= 0:
             raise ValueError('The maximum number of iterations of the EM procedure must be positive')
+        E_EM, M_EM  = self.Inference, self.Learning 
         logLH, Break = self.logLikelihood, self.break_condition
         self.logLH_delta = kwargs.get('logLH_delta', None)
         for kw, val in kwargs.iteritems(): self.kw = val
@@ -93,23 +89,17 @@ class lm(object):
 
         pass  
     
-    @classmethod
-    def mu_y(cls, y = None):
+    def mu_y(self):
         
-        if y is None: y = cls.y
-        return mean(y, axis = 1).reshape(cls.p, 1)
+        return mean(self.y, axis = 1).reshape(self.p, 1)
     
-    @classmethod
-    def cov_obs(cls, y = None, cov_bias = 1):
+    def cov_obs(self, cov_bias = 1):
         
-        if y is None: y = cls.y
-        return cov(y, bias = cov_bias)
+        return cov(self.y, bias = cov_bias)
     
-    @classmethod
-    def centered_input(cls): return cls.y - cls.mu_y()
+    def centered_input(self): return self.y - self.mu_y()
 
-    @classmethod
-    def erase(cls): cls.y, cls.n, cls.p = lm._default_values_
+    def erase(self): self.y, self.n, self.p = lm._default_values_
 
     
 
@@ -143,6 +133,7 @@ class fa(lm):
     
     def __init__(self, y, k):
         
+        super(fa, self).__init__(y)
         if not isinstance(k, int):
             raise TypeError('k (the number of latent factors) must be an integer')
         if k <= 0:
@@ -150,6 +141,7 @@ class fa(lm):
         if k > self.p:
             raise ValueError('k (the number of latent factors) must not be greater than p (the number of observables)')
         self.k = k
+        print self.n, self.k, self.p
 
         self.initialize()
 
@@ -640,6 +632,7 @@ class mog(mixture):
 
     def __init__(self, y, m, typePrior_mu = ''):
 
+        super(mog, self).__init__(y)
         try: m = int(m)
         except: raise Exception, "Specify an integer for the nr latent factors"
         if m <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
@@ -736,6 +729,7 @@ class mofa(mixture):
                       to initialize the self.mu terms.
         """
 
+        super(mofa, self).__init__(y)
         try: m = int(m)
         except ValueError: raise Exception, "Specify an integer for the nr of mixture components"
         if m <= 0: raise Exception, "Specify a positive integer for the nr of mixture components"
@@ -873,6 +867,7 @@ class icaMacKay(lm):
     
     def __init__(self, y):
         
+        super(icaMacKay, self).__init__(y)
         self.k = self.p
         self.initialize()
         
