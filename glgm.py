@@ -210,7 +210,6 @@ class fa(lm):
         if k > self.p:
             raise ValueError('k (the number of latent factors) must not be greater than p (the number of observables)')
         self.k = k
-        print self.n, self.k, self.p
 
         self.initialize()
 
@@ -368,8 +367,6 @@ class fa(lm):
     def infer(self):
         
         if self.trained: return self.get_expected_latent(), self.infer_observed()
-        print 'Not even trained!'
-        return
 
     def get_expected_latent(self):
         
