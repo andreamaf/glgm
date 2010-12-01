@@ -366,7 +366,7 @@ class fa(lm):
 
     def infer(self):
         
-        if self.trained: return self.get_expected_latent(), self.infer_observed()
+        return self.get_expected_latent(), self.infer_observed()
 
     def get_expected_latent(self):
         
