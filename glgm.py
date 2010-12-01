@@ -368,16 +368,17 @@ class fa(lm):
         
         return self.get_expected_latent(), self.infer_observed()
 
-    def get_expected_latent(self):
+    def get_expected_latent(self, z):
         
         if not(self.trained): self.InferandLearn()
-        return dot(self.beta, self.y)
+        return dot(self.beta, z - self.mu_y())
 
     def infer_observed(self, noised = False):
         
         if not(self.trained): self.InferandLearn()
-        inf_y = dot(self.C, self.get_expected_latent()) + self.mu_y()
-        if noised: return inf_y + multivariate_normal(zeros(self.p), diag(self.R), self.n).T
+        inf_y = dot(self.C, self.get_expected_latent(self.y)) - self.mu_y()
+        if noised:
+            return inf_y + multivariate_normal(zeros(self.p), diag(self.R), self.n).T
         return inf_y
     
     def get_new_observed(self, input, noised = False, centered = False):
@@ -388,8 +389,8 @@ class fa(lm):
 
         if not(self.trained): self.InferandLearn()
         if isinstance(input, int): input = normal(size = (self.k, input))
-        new_obs = dot(self.C, input) + self.mu_y()
-        if centered: new_obs -= self.mu_y(new_obs)
+        new_obs = dot(self.C, input) - self.mu_y()
+        if centered: new_obs += self.mu_y()
         if noised:
             new_obs += multivariate_normal(zeros(self.p), diag(self.R), input.shape[1]).T
         return new_obs
