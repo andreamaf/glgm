@@ -10,9 +10,7 @@ the following models based mainly on references nr.1 (see References below):
 
         x(t+1) = Ax(t) + w(t) = Ax(t) + w0,     w0 = N(0, Q)
         y(t)   = Cx(t) + v(t) = Cx(t) + v0,     v0 = N(0, R)
-
-where:
-
+     where:
         x is a (k,1) vector of latent factors or state or causes (hidden) variables
         y is a (p,1) vector of observations
         A is a (k,k) matrix of states transition
@@ -22,11 +20,7 @@ where:
         w and v are statistically independent of each other and of x and y
         N stands for for Gaussian or Normal probability density function (pdf)
 
-NB Matrix x and y have both shape given by the tuple ('variables nr','samples nr').
-
-
 In particular the module aims to implement the following:
-
     - fa    (Factor Analysis)
     - ppca  (Probabilistic Principal Component Analysis)
     - pca   (Principal Component Analysis)
@@ -35,13 +29,8 @@ In particular the module aims to implement the following:
     - k-means clustering
     - mofa  (Mixture of Factor Analyzers)
     - ica   (Independent Component Analysis)
-    
-
-To use any a method actually implemented, there is no need of any installation procedure, only to import the module glgm (in the glgm.py file) and then call the correspondent method.
-
 
 References:
-
     1  Unifying Review of Linear Gaussian Models
         Roweis, Ghahramani
         Neural Computation 1999 11:2, 305-345.
@@ -74,6 +63,8 @@ References:
         Rabiner
     17 Maximum Likelihood Estimation for Multivariate Mixture Observations of Markov Chains
         Juang, Levinson, Sondhi   
+
+NB Matrix x and y have both shape given by the tuple ('variables nr','samples nr').
 """
 
 
@@ -104,18 +95,21 @@ class lm(object):
 
     def InferandLearn(self, max_iter_nr = 30, **kwargs):
         """
-        Inference and Learning method to be delegated by subclasses.
-        Here EM algorithm's iterations will start.
+        This method implement and run the EM algorithm, in order to:
+        - learn model's parameter A, C, Q, R (learning or system identification)
+        - estimate hidden states from observations (inference or filtering or smoothing)
+
+        Inference and Learning, respectively in methods E and M, are overrided by subclasses.
         """
         
         if not isinstance(max_iter_nr, int):
             raise TypeError('The maximum number of iterations of the EM procedure must be an integer')
         if max_iter_nr <= 0:
             raise ValueError('The maximum number of iterations of the EM procedure must be positive')
+        for kw, val in kwargs.iteritems(): self.kw = val
         E_EM, M_EM  = self.Inference, self.Learning 
         logLH, Break = self.logLikelihood, self.break_condition
         self.logLH_delta = kwargs.get('logLH_delta', None)
-        for kw, val in kwargs.iteritems(): self.kw = val
         
         for iter_nr in xrange(max_iter_nr):
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -134,6 +128,7 @@ class lm(object):
             # Break condition of the for loop
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             if Break(): break
+        
         self.iter_nr = iter_nr
         self.trained = True
 
@@ -178,28 +173,29 @@ class lm(object):
 
 class fa(lm):
     """
-    GLGM static data modeling in fa, ppca and pca
-    Based on ref.1
+    Factor Analysis model of static data y.
     Model:
-        A = 0
+        A = 0     (because data are static in time)
         x = x0 = w0,        w0 = N(0, Q)
         y = y0 = Cx + v0,   v0 = N(0, R)
-    From which
-        y ~ N(0, CQCT + R) 
+    then
+        y ~ N(0, CQC.T + R) 
     and in order to solve any model degeneracy
         Q = I
         R is diagonal
-    then
-        y   ~ N(0, C*CT + R)
+    finally
+        y   ~ N(0, C*C.T + R)
         x_y ~ N(beta*y, I-beta*C)   useful for the Inference task
-        beta = CT(C*CT + R)^-1
-        CT = C.T
-    Here C is also called the factor loading matrix,
-    the diagonal elements of R as the uniquenesses,
-    and v the sensor noise.
-    This is a static glgm => A = None | []
+        beta = C.T(C*C.T + R)**-1
+    
+    C is also called the factor loadings matrix,
+    R's diagonal elements are the uniquenesses,
+    v the sensor noise.
+    
     Hint: apply Template Design Pattern to scale-down from fa
           to spca (or ppca), pca and whitening sub-classes.
+    
+    Based on ref.1
     """
 
     k = None
@@ -310,19 +306,21 @@ class fa(lm):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         beta = dot(C, CT)
         beta[self.arangep, self.arangep] += R
-        self.logLH_temp = beta # = inv(beta)
+        self.logLH_temp = beta         # = inv(beta)
         self.beta = dot(CT, inv(beta)) #beta)
 
     def Inference(self):
         """
         E step of EM algorithm
         Inference of sufficient statistic E(x|y) (here x_y)
+        
         NB I tried to compute beta via the matrix inversion lemma
            but performances doesn't seem to be better than applying the ordinary formula.
         NB beta.ravel()[arange(0, k**2, k) + arange(k)] += 1.   #<--- code at left is inefficient!
            beta.ravel()[arange(0, p**2, p) + arange(p)] += 1.   #<--- code at left is inefficient!
            self.V.ravel()[arange(0, k**2, k) + arange(k)] += 1. #<--- code at left is inefficient!
-        TODO Test if betaInferenceLemma is advantageous at high p values.
+
+        TODO Test if betaInferenceLemma gives performances advantages for (very) high p.
         """
         
         self.betaInferenceMethod()
