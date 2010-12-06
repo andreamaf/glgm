@@ -229,7 +229,6 @@ class fa(lm):
         self.C = normal(0, sqrt(scale / self.k), size = (self.p, self.k))
     
     def initialize_R(self, with_WN = False):
-        """There are other (here commented) ways to init R"""
         
         self.R = self.yyTdiag
         if with_WN: self.R += randn(self.p)
