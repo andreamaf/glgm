@@ -80,6 +80,6 @@ def testFA_singularCov():
 if __name__ == '__main__':
     
     testFA()
-    testFA(k=3)
-    #testFA(100, 10000, 10, 500)
-    testFA_singularCov()
+    #testFA(k=3)
+    testFA(100, 20000, 10, 50)
+    #testFA_singularCov()
