@@ -57,6 +57,23 @@ def testFA(d = 10, N = 5000, k = 4, min_iter_nr = 20):
 
         #est = FA.get_new_observed(100000).T
         #assert_array_almost_equal_diff(cov(est, rowvar=0), multiply(fa.A, fa.A.T), 1)
+
+
+def testFA_singularCov():
+
+    x = array([[ 1., 1., 0., 0., 0.],
+               [ 0., 1., 1., 0., 0.],
+               [ 0., 1., 0., 0., 0.],
+               [ 0., 1., 1., 0., 0.],
+               [ 0., 1., 0., 0., 1.],
+               [ 0., 1., 0., 1., 0.],
+               [ 0., 1., 0., 0., 0.],
+               [ 1., 1., 0., 0., 0.],
+               [ 1., 1., 0., 0., 0.],
+               [ 0., 1., 0., 1., 1.]])
+   
+    FA = fa(x.T, k = 3)
+    FA.InferandLearn()
     
 
 
@@ -64,6 +81,5 @@ if __name__ == '__main__':
     
     testFA()
     testFA(k=3)
-    testFA(30, 10000, 4, 100)
-    #testFA(50, 10000, 7, 200)
-    #testFA(100, 20000, 10, 100)
+    #testFA(100, 10000, 10, 500)
+    testFA_singularCov()

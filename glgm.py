@@ -226,6 +226,7 @@ class fa(lm):
         # Following MDP init settings
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         scale = product(self.yyTdiag) ** (1./self.p)
+        assert scale > 0, "Input covariance matrix is singular"
         self.C = normal(0, sqrt(scale / self.k), size = (self.p, self.k))
     
     def initialize_R(self, with_WN = False):
