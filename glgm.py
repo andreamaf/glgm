@@ -263,7 +263,8 @@ class fa(lm):
         self.betaInferenceMethod = self.betaInferenceLemma \
                             if inferwithLemma else self.betaInference
 
-        lm.InferandLearn(self, max_iter_nr = max_iter_nr, logLH_delta = logLH_delta)
+        #lm.InferandLearn(self, max_iter_nr = max_iter_nr, logLH_delta = logLH_delta)
+        super(fa, self).InferandLearn(max_iter_nr = max_iter_nr, logLH_delta = logLH_delta)
         
     def break_condition(self):
         
