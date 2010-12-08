@@ -27,7 +27,7 @@ def testFA(d = 10, N = 5000, k = 4, min_iter_nr = 20):
         t_start = time.time()
         FA = fa(x.T, k = k)
         FA.InferandLearn(max_iter_nr = _n, inferwithLemma = _b)
-        print "Model FA(max_iter_nr=%d, inferwithLemma=%s) learned in %.5f seconds" \
+        print "FA(max_iter_nr=%d, inferwithLemma=%s) learned in %.5f seconds" \
             % (_n, str(_b), time.time() - t_start)
 
         # compare estimates to real parameters
