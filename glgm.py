@@ -373,25 +373,21 @@ class fa(lm):
         
         if not(self.trained): self.InferandLearn()
         return dot(self.beta, z - self.mu_y())
-
+    """
     def infer_observed(self, noised = False):
         
         if not(self.trained): self.InferandLearn()
-        inf_y = dot(self.C, self.get_expected_latent(self.y)) - self.mu_y()
+        inf_y = dot(self.C, self.y)) - self.mu_y()
         if noised:
             return inf_y + multivariate_normal(zeros(self.p), diag(self.R), self.n).T
         return inf_y
-    
-    def get_new_observed(self, input, noised = False, centered = False):
-        """
-        input is: the nr. of OR the latent samples (they'd be WN, but actually I don't check)
-                  for which to return new observations based on inference results 
-        """
+    """
+    def get_new_observed(self, input, noised = False):
+        """input: nr. or latent samples corresponding to new observations in output"""
 
         if not(self.trained): self.InferandLearn()
         if isinstance(input, int): input = normal(size = (self.k, input))
-        new_obs = dot(self.C, input) - self.mu_y()
-        if centered: new_obs += self.mu_y()
+        new_obs = dot(self.C, input) + self.mu_y()
         if noised:
             new_obs += multivariate_normal(zeros(self.p), diag(self.R), input.shape[1]).T
         return new_obs

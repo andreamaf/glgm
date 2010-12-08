@@ -42,20 +42,20 @@ def testFA(d = 10, N = 5000, k = 4, min_iter_nr = 20):
         assert sum(s / max(s) > 1e-2) == k, 'C and its estimation do not span the same subspace'
         
         y = FA.get_expected_latent(x.T)
-        xi = FA.infer_observed()
-        xi = FA.infer_observed(noised = True)
-        xn = FA.get_new_observed(100)
+        xn = FA.get_new_observed(10000)
+        xn = FA.get_new_observed(10000, noised = True)
         xn = FA.get_new_observed(y)
         xn = FA.get_new_observed(y, noised = True)
-        xn = FA.get_new_observed(y, noised = True, centered = True)
 
         # test that noise has the right mean and variance
         est = FA.get_new_observed(zeros((k, N)), noised = True)
         est -= FA.mu_y()
+        print mean(est,axis=1)
+        print abs(mean(est,axis=1))
         assert_array_almost_equal(diag(cov(est, rowvar=1)), FA.R, 3)
         #assert_almost_equal(amax(abs(mean(est, axis=1)), axis=None), 0., 3)
 
-        #est = FA.get_new_observed(100000).T
+        est = FA.get_new_observed(100000).T
         #assert_array_almost_equal_diff(cov(est, rowvar=0), multiply(fa.A, fa.A.T), 1)
 
 
