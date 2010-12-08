@@ -75,6 +75,7 @@ from numpy import (array, arange, dot, inner, outer, vdot, cov,
                    concatenate, pi, inf, amin, amax, empty,
                    tanh, any, isnan)
 from numpy.linalg import (norm, inv, det, svd, solve, cholesky, linalg)
+#from scipy.linalg import (norm, inv, det, svd, solve, cholesky, linalg)
 from numpy.random import (normal, randn, rand, multivariate_normal, uniform)
 
 
@@ -395,6 +396,9 @@ class fa(lm):
 
 
 class spca(fa):
+    """
+    Sensible (or Probabilistic) Principal Component Analysis. See ref.1 and 15
+    """ 
 
     def initialize_R(self):
         
@@ -408,7 +412,8 @@ class spca(fa):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Covariance matrix R of observations = const*I matrix
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.R = ones(self.p) * mean(self.yyTdiag - sum(multiply(self.C, self.delta), axis=1) / self.n)
+        self.R = ones(self.p) * \
+                 mean(self.yyTdiag - sum(multiply(self.C, self.delta), axis=1) / self.n)
 
 
 class ppca(spca): pass
@@ -416,7 +421,7 @@ class ppca(spca): pass
 
 class pca(fa):
     """
-    See ref. 1 and 15
+    EM algorithm for Principal Component Analysis. See ref.1 and 15.
     TODO: Check EM method and in particular how to get an orthonormal basis,
           in order to obtain results comparable to those from the svd approach
     """
@@ -485,13 +490,10 @@ class pca(fa):
             
     def getOrthogonalBasis(self):
 
-        try:
-            import scipy.linalg as scilinalg
-            self.C = scilinalg.orth(self.C)
-            #print 'orth(C)=', C_orth
-            #u, varsvd, v = svd(cov(dot(C_orth.T, self.centered_input())), full_matrices = False)
-            #self.C = dot(self.C, v)
-        except scilinalg.LinAlgError: print "An error occurred: none orthonormal basis found!"
+        self.C, eigC, VC = svd(self.C)
+        #print 'orth(C)=', C_orth
+        #u, varsvd, v = svd(cov(dot(C_orth.T, self.centered_input())), full_matrices = False)
+        #self.C = dot(self.C, v)
 
     def Learning(self):
         
@@ -513,8 +515,9 @@ class pca(fa):
     def lse(self): pass
 
     def svd(self):
+        """Finding Principal Components via SVD method"""
         
-        print 'Performing SVD...'
+        #print 'Performing SVD...'
         U, self.VarSvd, V = svd(self.yyT, full_matrices = False)
         self.C = U[:, :self.k]
         self.trained = True
