@@ -78,5 +78,6 @@ if __name__ == '__main__':
     
     testFA()
     testFA(k=3)
+    testFA(d=30, N=20000, k=5)
     #testFA(100, 20000, 10, 50)
     #testFA_singularCov()
