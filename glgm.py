@@ -390,6 +390,7 @@ class fa(lm):
         new_obs = dot(self.C, input) + self.mu_y()
         if noised:
             new_obs += multivariate_normal(zeros(self.p), diag(self.R), input.shape[1]).T
+            #new_obs += normal(size = (self.p, input.shape[1]))*(self.R**.5).reshape(self.p, 1)
         return new_obs
 
 

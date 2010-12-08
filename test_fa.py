@@ -23,8 +23,7 @@ def testFA(d = 10, N = 5000, k = 4, min_iter_nr = 20):
     noise = normal(0., 1., size=(N, d)) * sigma
     x = dot(y, A) + mu + noise
      
-    for _b, _n in product((True, False), 
-                          (min_iter_nr, min_iter_nr*2, min_iter_nr*3)):
+    for _b, _n in product((True, False), (min_iter_nr, min_iter_nr*3)):
         t_start = time.time()
         FA = fa(x.T, k = k)
         FA.InferandLearn(max_iter_nr = _n, inferwithLemma = _b)
@@ -48,15 +47,13 @@ def testFA(d = 10, N = 5000, k = 4, min_iter_nr = 20):
         xn = FA.get_new_observed(y, noised = True)
 
         # test that noise has the right mean and variance
-        est = FA.get_new_observed(zeros((k, N)), noised = True)
+        est = FA.get_new_observed(zeros((k, 10*N)), noised = True)
         est -= FA.mu_y()
-        print mean(est,axis=1)
-        print abs(mean(est,axis=1))
         assert_array_almost_equal(diag(cov(est, rowvar=1)), FA.R, 3)
-        #assert_almost_equal(amax(abs(mean(est, axis=1)), axis=None), 0., 3)
+        assert_almost_equal(amax(abs(mean(est, axis=1)), axis=None), 0., 2)
 
         est = FA.get_new_observed(100000).T
-        #assert_array_almost_equal_diff(cov(est, rowvar=0), multiply(fa.A, fa.A.T), 1)
+        assert_array_almost_equal(cov(est, rowvar=0), dot(FA.C, FA.C.T), 1)
 
 
 def testFA_singularCov():
@@ -80,6 +77,6 @@ def testFA_singularCov():
 if __name__ == '__main__':
     
     testFA()
-    #testFA(k=3)
-    testFA(100, 20000, 10, 50)
+    testFA(k=3)
+    #testFA(100, 20000, 10, 50)
     #testFA_singularCov()
