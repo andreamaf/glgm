@@ -74,8 +74,9 @@ from numpy import (array, arange, dot, inner, outer, vdot, cov,
                    log, abs, exp, power, hstack, vstack, append,
                    concatenate, pi, inf, amin, amax, empty,
                    tanh, any, isnan)
-from numpy.linalg import (norm, inv, det, svd, solve, cholesky, linalg)
-#from scipy.linalg import (norm, inv, det, svd, solve, cholesky, linalg)
+#from numpy.linalg.linalg import (norm, inv, det, svd, solve, cholesky)
+#from numpy.linalg import (norm, inv, det, svd, solve, cholesky)
+from scipy.linalg import (norm, inv, det, svd, solve, cholesky)
 from numpy.random import (normal, randn, rand, multivariate_normal, uniform)
 
 
