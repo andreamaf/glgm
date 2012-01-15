@@ -67,17 +67,15 @@ References:
 NB Matrix x and y have both shape given by the tuple ('variables nr','samples nr').
 """
 
-
 from numpy import (array, arange, dot, inner, outer, vdot, cov,
                    diag, ones, eye, zeros, argmax, nanargmax, 
                    mean, std, multiply, sum, product, sqrt,
                    log, abs, exp, power, hstack, vstack, append,
                    concatenate, pi, inf, amin, amax, empty,
                    tanh, any, isnan)
-#from numpy.linalg.linalg import (norm, inv, det, svd, solve, cholesky)
-#from numpy.linalg import (norm, inv, det, svd, solve, cholesky)
 from scipy.linalg import (norm, inv, det, svd, solve, cholesky)
-from numpy.random import (normal, randn, rand, multivariate_normal, uniform)
+from numpy.random import (normal, randn, rand, multivariate_normal,
+                          uniform)
 
 
 class lm(object):
@@ -93,9 +91,11 @@ class lm(object):
         self.y = y
         self.p, self.n = y.shape
              
-    def __call__(self, **kw): return self.InferandLearn(**kw)
+    def __call__(self, **kw):
+        
+        return self.InferandLearn(**kw)
 
-    def InferandLearn(self, max_iter_nr = 30, **kwargs):
+    def InferandLearn(self, max_iter_nr = 20, **kwargs):
         """
         This method implement and run the EM algorithm, in order to:
         - learn model's parameter A, C, Q, R (learning or system identification)
@@ -108,7 +108,8 @@ class lm(object):
             raise TypeError('The maximum number of iterations of the EM procedure must be an integer')
         if max_iter_nr <= 0:
             raise ValueError('The maximum number of iterations of the EM procedure must be positive')
-        for kw, val in kwargs.iteritems(): self.kw = val
+        for kw, val in kwargs.iteritems():
+            self.kw = val
         E_EM, M_EM  = self.Inference, self.Learning 
         logLH, Break = self.logLikelihood, self.break_condition
         self.logLH_delta = kwargs.get('logLH_delta', None)
@@ -142,22 +143,22 @@ class lm(object):
     def Inference(self):
         """The E(xpectation) step of EM algorithm"""
         
-        pass
+        raise NotImplementedError('Method Inference not implemented in base class')
 
     def Learning(self):
         """The M(aximization) step of EM algorithm"""
 
-        pass
+        raise NotImplementedError('Method Learning not implemented in base classi')
     
     def break_condition(self): 
         """A method verifying an ad-hoc condition to exit from EM iter."""
 
-        pass
+        raise NotImplementedError('Method break_condition not implemented in base class')
     
     def logLikelihood(self):
         """The logLikelihood method for the given model"""
 
-        pass  
+        raise NotImplementedError('Method logLikelihood not implemented in base class')
     
     def mu_y(self):
         
@@ -167,12 +168,15 @@ class lm(object):
         
         return cov(self.y, bias = cov_bias)
     
-    def centered_input(self): return self.y - self.mu_y()
+    def centered_input(self):
+        
+        return self.y - self.mu_y()
 
-    def erase(self): self.y, self.n, self.p = lm._default_values_
+    def erase(self):
+        
+        self.y, self.n, self.p = lm._default_values_
 
     
-
 class fa(lm):
     """
     Factor Analysis model of static data y.
@@ -266,8 +270,8 @@ class fa(lm):
         self.betaInferenceMethod = self.betaInferenceLemma \
                             if inferwithLemma else self.betaInference
 
-        #lm.InferandLearn(self, max_iter_nr = max_iter_nr, logLH_delta = logLH_delta)
-        super(fa, self).InferandLearn(max_iter_nr = max_iter_nr, logLH_delta = logLH_delta)
+        super(fa, self).InferandLearn(max_iter_nr = max_iter_nr,
+                                      logLH_delta = logLH_delta)
         
     def break_condition(self):
         
@@ -295,7 +299,8 @@ class fa(lm):
         beta[self.arangek, self.arangek] += 1.
         beta = -dot(C, dot(inv(beta), beta_temp))
         beta[self.arangep, self.arangep] += 1.
-        self.logLH_temp = multiply(Rinv.reshape(self.p, 1), beta) ## Rinv * beta #multiply(Rinv, beta)
+        self.logLH_temp = multiply(Rinv.reshape(self.p, 1), beta)
+        # self.logLH_temp = Rinv * beta #multiply(Rinv, beta)
         self.beta = dot(beta_temp, beta)
 
     def betaInference(self):
@@ -316,13 +321,16 @@ class fa(lm):
         E step of EM algorithm
         Inference of sufficient statistic E(x|y) (here x_y)
         
-        NB I tried to compute beta via the matrix inversion lemma
-           but performances doesn't seem to be better than applying the ordinary formula.
-        NB beta.ravel()[arange(0, k**2, k) + arange(k)] += 1.   #<--- code at left is inefficient!
-           beta.ravel()[arange(0, p**2, p) + arange(p)] += 1.   #<--- code at left is inefficient!
-           self.V.ravel()[arange(0, k**2, k) + arange(k)] += 1. #<--- code at left is inefficient!
+        NB Computing beta via the matrix inversion lemma,
+           in place of apply ordinary formulas, does not
+           bring performances improvements.
+        NB Following code is very inefficient: 
+            beta.ravel()[arange(0, k**2, k) + arange(k)] += 1.
+            beta.ravel()[arange(0, p**2, p) + arange(p)] += 1.
+            self.V.ravel()[arange(0, k**2, k) + arange(k)] += 1.
 
-        TODO Test if betaInferenceLemma gives performances advantages for (very) high p.
+        TODO Test if betaInferenceLemma gives performances advantages
+             for (very) high p.
         """
         
         self.betaInferenceMethod()
@@ -375,24 +383,27 @@ class fa(lm):
         
         if not(self.trained): self.InferandLearn()
         return dot(self.beta, z - self.mu_y())
-    """
-    def infer_observed(self, noised = False):
-        
-        if not(self.trained): self.InferandLearn()
-        inf_y = dot(self.C, self.y)) - self.mu_y()
-        if noised:
-            return inf_y + multivariate_normal(zeros(self.p), diag(self.R), self.n).T
-        return inf_y
-    """
+    
+    #def infer_observed(self, noised = False):
+    #    
+    #    if not(self.trained): self.InferandLearn()
+    #    inf_y = dot(self.C, self.y)) - self.mu_y()
+    #    if noised:
+    #        return inf_y + multivariate_normal(zeros(self.p),
+    #                                           diag(self.R), self.n).T
+    #    return inf_y
+    
     def get_new_observed(self, input, noised = False):
         """input: nr. or latent samples corresponding to new observations in output"""
 
-        if not(self.trained): self.InferandLearn()
-        if isinstance(input, int): input = normal(size = (self.k, input))
+        if not(self.trained):
+            self.InferandLearn()
+        if isinstance(input, int):
+            input = normal(size = (self.k, input))
         new_obs = dot(self.C, input) + self.mu_y()
         if noised:
-            new_obs += multivariate_normal(zeros(self.p), diag(self.R), input.shape[1]).T
-            #new_obs += normal(size = (self.p, input.shape[1]))*(self.R**.5).reshape(self.p, 1)
+            new_obs += multivariate_normal(zeros(self.p),
+                                           diag(self.R), input.shape[1]).T
         return new_obs
 
 
@@ -413,35 +424,35 @@ class spca(fa):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Covariance matrix R of observations = const*I matrix
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.R = ones(self.p) * \
-                 mean(self.yyTdiag - sum(multiply(self.C, self.delta), axis=1) / self.n)
+        self.R = ones(self.p) * mean(self.yyTdiag - \
+                        sum(multiply(self.C, self.delta), axis=1) / self.n)
 
 
-class ppca(spca): pass
+class ppca(spca):
+    """Alias for spca"""
+
+    pass
 
 
 class pca(fa):
     """
     EM algorithm for Principal Component Analysis. See ref.1 and 15.
-    TODO: Check EM method and in particular how to get an orthonormal basis,
-          in order to obtain results comparable to those from the svd approach
+    TODO: Check EM method in order to get results comparable with the svd's ones
     """
     
     def __init__(self, y, k = None):
         
-        if k is None: self.k = self.p
-        else:
-            try: k = int(k)
-            except ValueError: raise Exception, "Specify a valid positive integer for the nr latent factors"
-            if k <= 0: raise Exception, "Specify a positive integer for the nr latent factors"
-            if k > self.p:
-                print 'The number of latent factors should be <= observables variables number.'
-                print 'Now it has been automatically set equal to the observables variables number'
-                self.k = self.p
-            else: self.k = k
+        super(fa, self).__init__(y)
+        if not isinstance(k, int):
+            raise TypeError('k (the number of latent factors) must be an integer')
+        if k <= 0:
+            raise ValueError('k (the number of latent factors) must be positive')
+        if k > self.p:
+            raise ValueError('k (the number of latent factors) must not be greater than p (the number of observables)')
+        self.k = k
 
         self.initialize()
-    
+        
     def initialize_C(self):
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -449,7 +460,7 @@ class pca(fa):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         scale = 1. #product(self.yyTdiag) ** (1./self.p)
         self.C = normal(0, sqrt(scale / self.k), size = (self.p, self.k))
-        self.C = array([e / norma(e) for e in self.C.T]).T
+        self.C = array([e / norm(e) for e in self.C.T]).T
     
     def initialize_R(self):
         
@@ -458,7 +469,9 @@ class pca(fa):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.R = zeros(self.p)
 
-    def Inference(self): self.betaInference()
+    def Inference(self):
+        
+        self.betaInference()
     
     def betaInference(self):
 
@@ -468,7 +481,7 @@ class pca(fa):
         CT = self.C.T
         self.beta = dot(inv(dot(CT, self.C)), CT)
 
-    def InferandLearn(self, max_iter_nr = 100, svd_on = True, **kwargs):
+    def InferandLearn(self, max_iter_nr = 20, svd_on = True, **kwargs):
         
         self.V = zeros((self.k, self.k))
         
@@ -487,14 +500,18 @@ class pca(fa):
             # and an ordered orthogonal basis for the covariance in the
             # subspace can be constructed.)..."
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            self.getOrthogonalBasis()
+            self.projOrthogBasis()
             
-    def getOrthogonalBasis(self):
-
-        self.C, eigC, VC = svd(self.C)
-        #print 'orth(C)=', C_orth
-        #u, varsvd, v = svd(cov(dot(C_orth.T, self.centered_input())), full_matrices = False)
-        #self.C = dot(self.C, v)
+    def projOrthogBasis(self):
+        
+        xlatent = self.get_expected_latent(self.y)
+        U, s, V = svd(xlatent-xlatent.mean(axis=1).reshape(self.k, 1),
+                      full_matrices = False)
+        self._variances = s
+        self._scores = (s.reshape(self.k, 1) * V)
+        self._loadings = U
+        self.C = dot(self.C, U)
+        self.trained = True
 
     def Learning(self):
         
@@ -518,14 +535,15 @@ class pca(fa):
     def svd(self):
         """Finding Principal Components via SVD method"""
         
-        #print 'Performing SVD...'
-        U, self.VarSvd, V = svd(self.yyT, full_matrices = False)
-        self.C = U[:, :self.k]
+        U, s, V = svd(self.y-self.mu_y(), full_matrices = False)
+        self._variances = s
+        self._scores = (s[:self.k].reshape(self.k, 1) * V[:self.k,:])
+        self._loadings = U
+        self.C = U[:,:self.k]
         self.trained = True
-    
-    def get_expected_latent(self): return dot(self.beta, self.y)
-    
-    def get_latent(self): return dot(self.C.T, self.centered_input())
+       
+    #def get_expected_latent(self): return dot(self.beta, self.y)
+    #def get_latent(self): return dot(self.C.T, self.centered_input())
 
 
 class whitening(pca):
@@ -534,7 +552,6 @@ class whitening(pca):
         
         pca.InferandLearn(self, svd_on = True, **kwargs)
         self.C /= sqrt(self.VarSvd[:self.k]).reshape(1, self.k)
-
 
 
 class mixture(lm):
@@ -567,20 +584,24 @@ class mixture(lm):
 
     def Resppower(self): pass
 
-    def normalizeResp(self): self.Resp /= self.Resp.sum(axis = 0)
+    def normalizeResp(self):
+        
+        self.Resp /= self.Resp.sum(axis = 0)
     
     def initialize_pi(self):
 
         self.pi = rand(self.m)
         self.pi /= self.pi.sum()
     
-    def pi_clusters(self): self.pi = self.Resp.sum(axis = 1) / self.n
+    def pi_clusters(self):
+        
+        self.pi = self.Resp.sum(axis = 1) / self.n
 
     def Normalprior_mu(self, scale = 1):
         """Normal prior on cluster's centroids"""
 
         self.mu = multivariate_normal(self.mu_y().ravel(), \
-                                     self.cov_obs() / scale, self.m).reshape(self.m, self.p)
+                        self.cov_obs() / scale, self.m).reshape(self.m, self.p)
 
     def Uniformprior_mu(self):
         """Uniform prior on cluster's centroids"""
@@ -592,8 +613,10 @@ class mixture(lm):
     def initialize_mu(self):
         """Following a Strategy DP"""
     
-        if self.typePrior_mu == 'normal' or not(self.typePrior_mu): self.Normalprior_mu()
-        elif self.typePrior_mu == 'uniform': self.Uniformprior_mu()
+        if self.typePrior_mu == 'normal' or not(self.typePrior_mu):
+            self.Normalprior_mu()
+        if self.typePrior_mu == 'uniform':
+            self.Uniformprior_mu()
         
     def initializelogLH(self):
         
@@ -609,13 +632,15 @@ class mixture(lm):
     def CrossProdFactory(self, inv_sigma):
         """Curried method in order to speed up the processing"""
 
-        def CrossProdinner(z): return dot(dot(z, inv_sigma), z.T)
+        def CrossProdinner(z):
+            return dot(dot(z, inv_sigma), z.T)
         return CrossProdinner
     
     def Inference(self):
         """E step of EM algorithm"""
 
-        for Resp_i, pi, mu, sigma, LH in zip(self.Resp, self.pi, self.mu, self.sigma, self.LH_temp):
+        for Resp_i, pi, mu, sigma, LH in zip(self.Resp, self.pi, self.mu,
+                                             self.sigma, self.LH_temp):
             yCent_i = self.y - mu.reshape(self.p, 1)
             try:
                 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -626,7 +651,8 @@ class mixture(lm):
                 # Currying CrossProdFactory with inv(self.sigma[i])
                 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 _CrossProd = self.CrossProdFactory(inv(sigma)) 
-                Resp_i[:] = LH[:] = pi * const_i * exp(-.5 * array(map(_CrossProd, yCent_i.T)))
+                Resp_i[:] = LH[:] = pi * const_i * \
+                                    exp(-.5 * array(map(_CrossProd, yCent_i.T)))
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             # If no data in the i-th cluster, fixing pi[i] to zero 
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -671,9 +697,13 @@ class mixture(lm):
         self.deltalogLH = self.logLH - logLH_old
         self.logLH_tracks.append(self.logLH)
 
-    def MAP(self): return argmax(self.Resp, axis = 0)
+    def MAP(self):
+        
+        return argmax(self.Resp, axis = 0)
 
-    def GetExpectedLatent(self): return self.MAP()
+    def GetExpectedLatent(self):
+        
+        return self.MAP()
     
     # No (WN) noise added
     def InferObs(self):
@@ -690,12 +720,14 @@ class mixture(lm):
             try:
                 const_i = ((2*pi) ** self.p) * (abs(det(sigma)) ** -.5)
                 _CrossProd = self.CrossProdFactory(inv(sigma))
-                CompProb.append(pi * const_i * _CrossProd(obs - mu.reshape(self.p, 1)))
+                CompProb.append(pi * const_i * \
+                                _CrossProd(obs - mu.reshape(self.p, 1)))
             except linalg.LinAlgError: CompProb.append(0.)
         return CompProb 
 
-    def entropy(self): pass
-
+    def entropy(self):
+        
+        raise NotImplementedError
 
 
 class mog(mixture):
@@ -729,15 +761,13 @@ class mog(mixture):
             sigma[:] = dot(Resp_i * y_mu, y_mu.T) / Resp_i.sum()
 
 
-
 class vq(mog):
     """
     high alfa: small and separated clusters, approaching hard clustering or WTA rule
     alfa = 1: mog
     low alfa: smooth, fuzzy like, large and overlapping clusters
     """
-
-        
+       
     def InferandLearn(self, max_iter_nr = 100, alfa = 1): #entropy_delta = 1e-3 
         
         self.alfa = alfa
@@ -776,7 +806,6 @@ class kmeans(hard2vq):
     def sigma_clusters(self): pass
 
 
-
 class mofa(mixture):
     """
     Mixture of Factor Analyzers
@@ -810,14 +839,19 @@ class mofa(mixture):
         
         if hasattr(k, '__iter__'):
             try: map(int, k) 
-            except ValueError: raise Exception, "Specify integers for the iterable of latent factors nr"
-            if len(k) < m: raise Exception, "Specify as many latent factors as components nr"
+            except ValueError:
+                raise ValueError('Specify integers for the iterable of latent factors nr')
+            if len(k) < m:
+                raise Exception('Specify as many latent factors as components nr')
             for ki in k:
-                if ki <= 0: raise Exception, "Specify positive integers as latent factors nr"
+                if ki <= 0:
+                    raise Exception('Specify positive integers as latent factors nr')
         else:
             try: k = int(k)
-            except ValueError: raise Exception, "Specify an integer for the nr of latent factors"
-            if k <= 0: raise Exception, "Specify a positive integer for the nr of latent factors"
+            except ValueError:
+                raise Exception('Specify an integer for the nr of latent factors')
+            if k <= 0:
+                raise Exception('Specify a positive integer for the nr of latent factors')
             k = [k] * m
         self.k = tuple(k)
         
@@ -835,7 +869,8 @@ class mofa(mixture):
     def initialize_sigma(self):
 
         self.sigma = zeros(shape = (self.m, self.p, self.p))
-        for sg, fa in zip(self.sigma, self.fas): sg[:] = dot(fa.C, fa.C.T) + diag(fa.R)
+        for sg, fa in zip(self.sigma, self.fas):
+            sg[:] = dot(fa.C, fa.C.T) + diag(fa.R)
     
     def initializelogLH(self):
         
@@ -864,7 +899,7 @@ class mofa(mixture):
         sumResp_all = self.Resp.sum(axis = 1)
 
         for i, (k, mu, Resp, sumResp, cls) in enumerate(zip(self.k, \
-                                        self.mu, self.Resp, sumResp_all, self.fas)):
+                                self.mu, self.Resp, sumResp_all, self.fas)):
             
             y = self.y
             p, n = self.p, self.n 
@@ -896,13 +931,15 @@ class mofa(mixture):
                 Cmu = dot(RespyExyBlock, inv(RespExxyBlock))
                 cls.C[:] = Cmu[:, :-1]
                 mu[:] = Cmu[:, -1]
-                cls.R[:] = diag(dot(Resp * y, y.T) - dot(Cmu, dot(Resp * ExyBlock, y.T)))
+                cls.R[:] = diag(dot(Resp * y, y.T) - \
+                                dot(Cmu, dot(Resp * ExyBlock, y.T)))
             except linalg.LinAlgError:
                 print 'Mixture Component %d-th disappeared' % i
                 self.pi[i] = 0.
         
         self.postprocess_R()
-        for sg, fa in zip(self.sigma, self.fas): sg[:] = dot(fa.C, fa.C.T) + diag(fa.R)
+        for sg, fa in zip(self.sigma, self.fas):
+            sg[:] = dot(fa.C, fa.C.T) + diag(fa.R)
 
     def postprocess_R(self):
         """
@@ -914,12 +951,15 @@ class mofa(mixture):
         """
         
         if not(self.commonUniq):
-            for Resp, fa in zip(self.Resp, self.fas): fa.R[:] /= Resp.sum()
+            for Resp, fa in zip(self.Resp, self.fas):
+                fa.R[:] /= Resp.sum()
         else:
             Rmean = zeros(self.p) 
-            for fa in self.fas: Rmean += fa.R
+            for fa in self.fas:
+                Rmean += fa.R
             Rmean /= self.n
-            for fa in self.fas: fa.R[:] = Rmean
+            for fa in self.fas:
+                fa.R[:] = Rmean
     
     def logLikelihood_Old(self):
         """TODO: Review this!"""
@@ -933,7 +973,6 @@ class mofa(mixture):
         self.deltalogLH = self.logLH - logLH_old
         self.logLH_tracks.append(self.logLH)
     
-
 
 class icaMacKay(lm):
     """Based on ref.7, 9."""
@@ -994,7 +1033,8 @@ class icaMacKay(lm):
                     eta = (1 -_switch) * eta + _switch / (i + bias_eta)
                     self.A += eta * (self.A + outer(z, xi))
                 if any(isnan(self.A.ravel())):
-                    if verbose: print 'Got NaN at iter %d-th! Re-init unmix matrix A...' % (iter_nr + 1)
+                    if verbose:
+                        print 'Got NaN at iter %d-th! Re-init unmix matrix A...' % (iter_nr + 1)
                     self.initialize()           
             if any(isnan(self.A.ravel())):
                 if verbose:
