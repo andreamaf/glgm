@@ -14,11 +14,9 @@ where:
         v is a (k,1) vector of observation evolution WGN
         w and v are statistically independent of each other and of x and y
         N stands for for Gaussian or Normal probability density function (pdf)
+        matrix x and y have both shape given by the tuple ('variables nr','samples nr').
 
-NB Matrix x and y have both shape given by the tuple ('variables nr','samples nr').
-
-
-In particular the module aims to implement the following:
+In particular the module aims to implement:
 
     - fa    (Factor Analysis)
     - ppca  (Probabilistic Principal Component Analysis)
@@ -28,9 +26,6 @@ In particular the module aims to implement the following:
     - k-means clustering
     - mofa  (Mixture of Factor Analyzers)
     - ica   (Independent Component Analysis)
-    
-
-To use any a method actually implemented, there is no need of any installation procedure, only to import the module glgm (in the glgm.py file) and then call the correspondent method.
 
 
 References:
